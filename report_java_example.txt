@@ -1,0 +1,130 @@
+import java.util.*;
+
+public class ExamlyDemo {
+    static class User {
+        String name;
+        String email;
+        String password;
+        String role;
+
+        User(String name, String email, String password, String role) {
+            this.name = name;
+            this.email = email;
+            this.password = password;
+            this.role = role;
+        }
+    }
+
+    static class Question {
+        String text;
+        String answer;
+
+        Question(String text, String answer) {
+            this.text = text;
+            this.answer = answer;
+        }
+    }
+
+    static class Exam {
+        String id;
+        String title;
+        List<Question> questions = new ArrayList<>();
+
+        Exam(String id, String title) {
+            this.id = id;
+            this.title = title;
+        }
+    }
+
+    static class Attempt {
+        String examId;
+        String studentEmail;
+        Map<Integer, String> answers = new HashMap<>();
+        boolean submitted = false;
+
+        Attempt(String examId, String studentEmail) {
+            this.examId = examId;
+            this.studentEmail = studentEmail;
+        }
+    }
+
+    static class ExamSystem {
+        private final Map<String, User> users = new HashMap<>();
+        private final Map<String, Exam> exams = new HashMap<>();
+        private final Map<String, Attempt> attempts = new HashMap<>();
+
+        public void registerUser(String name, String email, String password) {
+            if (users.containsKey(email)) {
+                throw new IllegalArgumentException("User already exists.");
+            }
+            users.put(email, new User(name, email, password, "STUDENT"));
+        }
+
+        public User loginUser(String email, String password) {
+            User user = users.get(email);
+            if (user == null || !user.password.equals(password)) {
+                throw new IllegalArgumentException("Invalid email or password.");
+            }
+            return user;
+        }
+
+        public void addExam(String examId, String title, String... questionTexts) {
+            Exam exam = new Exam(examId, title);
+            for (int i = 0; i < questionTexts.length; i++) {
+                exam.questions.add(new Question(questionTexts[i], ""));
+            }
+            exams.put(examId, exam);
+        }
+
+        public Attempt startExam(String email, String examId) {
+            if (!users.containsKey(email)) {
+                throw new IllegalArgumentException("User not found.");
+            }
+            if (!exams.containsKey(examId)) {
+                throw new IllegalArgumentException("Exam not found.");
+            }
+
+            Attempt attempt = new Attempt(examId, email);
+            attempts.put(email + "@" + examId, attempt);
+            return attempt;
+        }
+
+        public void saveAnswer(String email, String examId, int questionIndex, String answer) {
+            Attempt attempt = attempts.get(email + "@" + examId);
+            if (attempt == null) {
+                throw new IllegalArgumentException("No active exam attempt found.");
+            }
+            attempt.answers.put(questionIndex, answer);
+        }
+
+        public void submitExam(String email, String examId) {
+            Attempt attempt = attempts.get(email + "@" + examId);
+            if (attempt == null) {
+                throw new IllegalArgumentException("No exam attempt found.");
+            }
+            attempt.submitted = true;
+            System.out.println("Exam submitted for " + email + " in " + examId);
+        }
+    }
+
+    public static void main(String[] args) {
+        ExamSystem system = new ExamSystem();
+
+        system.registerUser("Alice", "alice@example.com", "pass123");
+        system.addExam(
+            "JAVA101",
+            "Java Basics",
+            "What is a class?",
+            "What is the purpose of a method?"
+        );
+
+        Attempt attempt = system.startExam("alice@example.com", "JAVA101");
+        system.saveAnswer("alice@example.com", "JAVA101", 0, "A blueprint for objects");
+        system.saveAnswer("alice@example.com", "JAVA101", 1, "To define behavior");
+        system.submitExam("alice@example.com", "JAVA101");
+
+        System.out.println("Student: " + attempt.studentEmail);
+        System.out.println("Submitted: " + attempt.submitted);
+        System.out.println("Answers saved: " + attempt.answers.size());
+    }
+}
